@@ -3,35 +3,12 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"time"
 )
 
 /*
-build a simulation of underpopulation, overpopulation, and reproduction
-called Conway's Game of Life
-This simulation is played out on a 2D grid of cells
-This challenge focuses on SLICES.
-Each cell has 8 adjacent cells in the horizontal, vertical and diagonal directions.
-In each generation, cells live or die based on the number of living neighbours.
-*/
-/*
-20.1 - A new Universe:
-For the first implementation of the Game of Life, limit the universe to a FIXED SIZE.
-Decide on the DIMENSIONS of the grid and define some CONSTANTS.
-Next, define a Universe type to hold a two-dimentional field of cells. With a Boolean type
-each cell will be either dead(false) or alive(true).
-Uses slices rather than arrays so that a universe can be shared with, or modified by,
-functions or methods.
-
-Write a NewUniverse function that uses 'make' to allocate and return a
-Universe with 'height' rows and 'width' columns PER ROW.
-
-Freshly allocated slices will default to the zero value, false in this case,
-which means the universe begins empty.
-*/
-
-/*
 How Universe looks, all populated with false to begin with.
-[false][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
+[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
@@ -47,10 +24,6 @@ How Universe looks, all populated with false to begin with.
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
 [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
 */
-
-/*
-
- */
 
 const (
 	width  = 80
@@ -59,6 +32,65 @@ const (
 
 //Universe represent alive(true) or dead(false) cells
 type Universe [][]bool
+
+//Step etermines next state of every cell in the universe based on previous state of universe
+func Step(a, b Universe) {
+	//based on prev state of universe
+  for i, row := range a {
+    for j := range row {
+			if a.Next(j, i) {
+				b[i][j] = true
+			} else {
+        b[i][j] = false
+			}
+		}
+		fmt.Println("\x0c")
+	}
+}
+
+//Next determines next state of a cell
+func (u Universe) Next(x, y int) bool {
+	var next bool
+  if u.Alive(x, y) == true {
+		if u.Neighbours(x, y) == 2 || u.Neighbours(x, y) == 3 {
+			next = true
+		}
+	} else {
+		if u.Neighbours(x, y) == 3 {
+			next = true
+		}
+	}
+	return next
+}
+
+//Alive determines state of a cell and wraps around if out of range
+func (u Universe) Alive(x, y int) bool {
+	x = (x + width) % width
+  y = (y + height) % height
+	return u[y][x]
+}
+
+//Neighbours counts number of live neighbours per cell
+func (u Universe) Neighbours(x, y int) int {
+	neighbours := make(map[string]bool)
+	count := 0
+	
+	neighbours["UpLeft"] = u.Alive(x-1, y-1)
+	neighbours["Left"] = u.Alive(x-1, y)
+	neighbours["DownLeft"] = u.Alive(x-1, y+1)
+	neighbours["Up"] = u.Alive(x, y-1)
+	neighbours["Down"] = u.Alive(x, y+1)
+	neighbours["UpRight"] = u.Alive(x+1, y-1)
+	neighbours["Right"] = u.Alive(x+1, y)
+	neighbours["DownRight"] = u.Alive(x+1, y+1)
+
+  for i := range neighbours {
+		if neighbours[i] == true {
+			count ++
+		}
+	}
+	return count
+}
 
 //Seed populates randomly approx 25% of the Universe with live cells
 func (u Universe) Seed() {
@@ -73,9 +105,6 @@ func (u Universe) Seed() {
 
 //Show displays a Universe
 func (u Universe) Show() {
-	// print each row
-	// represent live cells (true) with *
-	// dead (false) with " "
 	for _, row := range u {
 		for _, column := range row {
 			if column {
@@ -98,7 +127,14 @@ func NewUniverse() Universe {
 }
 
 func main() {
-	universe := NewUniverse()
-	universe.Seed()
-	universe.Show()
+	a := NewUniverse()
+	b := NewUniverse()
+	a.Seed()
+	for i := 0; i < 300; i++ {
+		Step(a, b)
+		a.Show()
+		time.Sleep(time.Second / 30)
+		a, b = b, a // Swap universes
+  }
+
 }
